@@ -4,8 +4,9 @@
 
 ### Data Management with SQL using 'InsideAirbnb'
 
-Add a link to PDF here.
-Add a link to the repository and a code here.
+Find the full report [here](projects/sql/sql_report.pdf).
+
+Find the full code [here](projects/sql/sql_code.txt).
  
 Initial description of the project would be here.
 

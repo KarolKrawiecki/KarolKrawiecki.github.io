@@ -1,0 +1,206 @@
+#####################
+Task 3: Data Cleaning
+#####################
+
+## Tab 1: Data Deduplication
+--Check if any listings are duplicated
+SELECT id, COUNT(id) as Count
+FROM listings
+GROUP BY id
+HAVING COUNT (id)>1 --no duplicates
+
+## Tab 2: Missing values
+--Overview of missing values for all relevant variables
+SELECT 'id' as ColumnName,COUNT(*)AS NullCount
+FROM listings
+WHERE id IS NULL
+UNION
+SELECT 'host_id' as ColumnName,COUNT(*)AS NullCount
+FROM listings
+WHERE host_id IS NULL
+UNION
+SELECT 'host_since' as ColumnName,COUNT(*)AS NullCount
+FROM listings
+WHERE host_since IS NULL
+UNION
+SELECT 'neighbourhood_cleansed' as ColumnName,COUNT(*)AS NullCount
+FROM listings
+WHERE neighbourhood_cleansed IS NULL
+UNION 
+SELECT 'room_type' as ColumnName,COUNT(*)AS NullCount
+FROM listings
+WHERE room_type IS NULL
+UNION 
+SELECT 'calculated_host_listings_count' as ColumnName,COUNT(*)AS NullCount
+FROM listings
+WHERE calculated_host_listings_count IS NULL
+
+--Investigating the missing values in host_since variable
+SELECT id, host_id, host_since, neighbourhood_cleansed, room_type, calculated_host_listings_count FROM listings
+WHERE host_since IS NULL --The missing values come from 5 different hosts. 
+
+--Since the number of missing fields is low, I can find the values online through listing_url
+SELECT id, host_id, host_since, neighbourhood_cleansed, room_type, calculated_host_listings_count, listing_url FROM listings
+WHERE host_since IS NULL
+
+--Only the year of joining is available, but its enough to answer Q1.
+--For that reason, correct year will be added in format YYYY-01-01.
+UPDATE listings SET host_since = "2013-01-01" WHERE host_id = 8317501
+UPDATE listings SET host_since = "2015-01-01" WHERE host_id = 22047056
+UPDATE listings SET host_since = "2015-01-01" WHERE host_id = 39828462
+UPDATE listings SET host_since = "2016-01-01" WHERE host_id = 43023101
+UPDATE listings SET host_since = "2015-01-01" WHERE host_id = 44815642
+
+--Final check whether updates were correct
+SELECT id, host_id, host_since, neighbourhood_cleansed, room_type, calculated_host_listings_count FROM listings
+WHERE host_since IS NULL 
+
+## Tab 3: Outliers
+--Checking distinct values of host_since to make sure the range is correct
+--Need to use strftime function to extract year
+SELECT DISTINCT strftime('%Y', host_since) as 'Year since hosts' FROM listings
+ORDER BY host_since
+
+--Checking the calculated_host_listings_count for negative values 
+SELECT host_id, calculated_host_listings_count FROM listings
+WHERE calculated_host_listings_count <= 0
+
+--Checking top 10 hosts with most listings to find any outliers
+SELECT DISTINCT host_id, calculated_host_listings_count FROM listings
+ORDER BY calculated_host_listings_count DESC
+LIMIT 10 --While first host_id is 2x as high as second, it is a realistic count
+
+## Tab 4: Other checks
+--Date formats - important for extracting years correctly
+--Issue if some dates formatted differently than YYYY-MM-DD
+--The top or bottom entries after ordering would be the incorrect formats
+SELECT DISTINCT host_since FROM listings
+ORDER BY host_since 
+LIMIT 5
+
+SELECT DISTINCT host_since FROM listings
+ORDER BY host_since DESC
+LIMIT 5
+
+--neighbourhood_cleansed - check for spelling mistakes
+SELECT DISTINCT neighbourhood_cleansed FROM listings
+ORDER BY neighbourhood_cleansed --no spelling issues
+
+--room_type - check for spelling mistakes
+SELECT DISTINCT room_type FROM listings
+ORDER BY room_type --no spelling issues
+
+--calculated_host_listings_count - check if the values match with the count in the dataset
+SELECT host_id, calculated_host_listings_count, count(*) as count_listings
+FROM listings
+GROUP BY host_id
+HAVING count_listings <> calculated_host_listings_count --no table means all matching
+
+######################
+Task 4: Implementation
+######################
+
+## Tab 1: Pseudonymization
+--Create the matching table for pseudonymization
+CREATE TABLE pseudo_mapping (
+		real_host_id INT PRIMARY KEY NOT NULL,
+		pseudo_host_id TEXT UNIQUE NOT NULL)
+		
+--Populating pseudo_mapping
+INSERT OR IGNORE INTO pseudo_mapping (real_host_id, pseudo_host_id)
+SELECT DISTINCT host_id, hex(randomblob(16))
+FROM listings_cleaned
+
+--Check! If there are any duplicates of real_host_id
+SELECT real_host_id, count(*) as c FROM pseudo_mapping
+GROUP BY real_host_id
+HAVING c > 1
+
+--Check! If any host_id is missing
+SELECT DISTINCT l.host_id, p.real_host_id FROM listings_cleaned l
+LEFT JOIN pseudo_mapping p ON
+p.real_host_id = l.host_id
+WHERE p.real_host_id IS NULL
+
+## Tab 2: Create Tables
+--Creating table hosts
+CREATE TABLE hosts (
+		pseudo_host_id TEXT PRIMARY KEY,
+		host_since TEXT NOT NULL,
+		listings_count INT NOT NULL)
+
+--Creating table listings
+CREATE TABLE listings (
+		id INT PRIMARY KEY,
+		pseudo_host_id TEXT NOT NULL,
+		neighbourhood TEXT NOT NULL,
+		room_type TEXT NOT NULL,
+		FOREIGN KEY (pseudo_host_id)
+			REFERENCES hosts (pseudo_host_id)
+		)
+
+## Tab 3: Feeding Tables
+--Filling in hosts table with UUID and related data from original dataset
+INSERT OR IGNORE INTO hosts (pseudo_host_id, host_since, listings_count)
+SELECT p.pseudo_host_id, l.host_since, l.calculated_host_listings_count
+FROM listings_cleaned l
+JOIN pseudo_mapping p ON p.real_host_id = l.host_id
+
+--Check! top 5 hosts i.r.t. number of listings
+SELECT DISTINCT pseudo_host_id, listings_count FROM hosts
+ORDER BY listings_count DESC
+LIMIT 5 --matches the values from outlier testing based on listings_cleaned
+
+--Feeding data into listings table
+INSERT INTO listings(id, pseudo_host_id, neighbourhood, room_type)
+SELECT c.id, p.pseudo_host_id, c.neighbourhood_cleansed, c.room_type
+FROM listings_cleaned c
+JOIN pseudo_mapping p ON p.real_host_id = c.host_id
+
+--Check! Listing data matches between new and original setup (for example for host_id 41445)
+SELECT id, host_id, host_since, neighbourhood_cleansed, room_type, calculated_host_listings_count
+FROM listings_cleaned c
+WHERE id = 41445;
+
+SELECT l.id as 'id', p.real_host_id as 'host_id', h.host_since as 'host_since', l.neighbourhood as 'neighbourhood_cleansed', l.room_type as 'room_type', h.listings_count as 'calculated_host_listings_count'
+FROM listings l
+INNER JOIN pseudo_mapping p ON p.pseudo_host_id = l.pseudo_host_id
+INNER JOIN hosts h on h.pseudo_host_id = p.pseudo_host_id
+WHERE l.id = 41445; --matching with output from previous query
+
+## Tab 4: Research Questions
+--Q1. What is the average number of listings per host based on the year of joining the Airbnb platform?
+--For the graph
+SELECT DISTINCT strftime('%Y', host_since) as host_year, ROUND(AVG(listings_count),2) as avg_listings_count FROM hosts
+GROUP BY host_year
+ORDER BY host_year
+
+--Count for first two years
+SELECT sum(listings_count) FROM hosts
+WHERE strftime('%Y', host_since) = '2008' OR strftime('%Y', host_since) = '2009'
+
+--Q2. What proportion of all listings offer the entire property in the central location (as example Westminster) 
+--versus the suburbs (Barnet) for the top 3 hosts?
+SELECT top3.pseudo_host_id, 
+	l.neighbourhood, 
+	ROUND(SUM(l.room_type = 'Entire home/apt') * 1.0 / COUNT(*),2) AS proportion
+FROM (
+	SELECT DISTINCT pseudo_host_id, listings_count FROM hosts
+	ORDER BY listings_count DESC
+	LIMIT 3
+	) as top3
+INNER JOIN listings l ON l.pseudo_host_id = top3.pseudo_host_id
+WHERE l.neighbourhood = 'Westminster' OR l.neighbourhood = 'Barnet'
+GROUP BY l.pseudo_host_id, l.neighbourhood;
+
+--Q3. What is the number of listings for all neighbourhoods for the top host?
+SELECT
+	l.neighbourhood, 
+	COUNT(*) AS listings_per_neighbourhood
+FROM (
+	SELECT DISTINCT pseudo_host_id, listings_count FROM hosts
+	ORDER BY listings_count DESC
+	LIMIT 1
+	) as top
+INNER JOIN listings l ON l.pseudo_host_id = top.pseudo_host_id
+GROUP BY l.neighbourhood;
