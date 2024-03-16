@@ -1,4 +1,4 @@
-# [Business Analytics Master Student](https://www.rsm.nl/education/master/msc-programmes/mscba-business-analytics-management/)
+# [Business Analytics Master Student :globe_with_meridians:](https://www.rsm.nl/education/master/msc-programmes/mscba-business-analytics-management/)
 
 ## Projects
 
