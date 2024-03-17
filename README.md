@@ -54,10 +54,25 @@ Westminster, as a central location in London, is clearly favoured over other nei
 
 ### Process mining for an insurance company using Celonis
 
-Description would go here
+Tools: Celonis, Python
+
+For the Business Analytics Workshop course during my master, I was a part of the team responsible for bringing insights for the dutch insurance firm using process mining. The company wanted to understand better how fast are their processes related to clients executed.
+
+As a part of this project, I had to learn the theory behind process mining. Some of the key aspects of that involved:
+
+- Process discovery: transforming the event log into process model
+- Conformance checking: comparing the *de facto* model against the firm expectations
+- Performance analysis: analysing the duration of the processes, rework, definition of happy / unhappy flows
+
+Additionally, during the project I learned how to use **Celonis**. More specifically, I was responsible for:
+
+- Configuring the data model consisting of multiple tables
+- Developing dashboards
+- Redefining KPI's, e.g.: rework
+
+Thanks to the use of additional data sets, I was able to expand the scope of analysis with client-specific information, allowing more depth in understanding the processes.
+
+*Side note*: Initially the goal was to perform the analysis using Python's **PM4PY** library. However, it very quickly became clear that Celonis provides better quality of analysis. Use of dashboards and dynamic filtering, similar to PowerBi / Tableau, is more intuitive to end user of the analysis than the implementation of process mining in Python.
 
 ### Predicting number of enrolled students at the university
 
-Add a link to repository here.
-
-Description would go here again
