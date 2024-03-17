@@ -3,3 +3,4 @@ theme: jekyll-theme-minimal
 plugins:
 - jemoji
 logo: /img/profilePhoto.png
+show_downloads: true
