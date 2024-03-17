@@ -126,39 +126,36 @@ header {
 }
 
 ul.downloads {
-  list-style:none;
-  height:40px;
-  padding:0;
-  background: #f4f4f4;
-  border-radius:5px;
-  border:1px solid #e0e0e0;
-  width:270px;
-}
+    list-style: none;
+    height: 40px;
+    padding: 0;
+    background: #f4f4f4;
+    border-radius: 5px;
+    border: 1px solid #e0e0e0;
+    width: 270px;
+    display: flex; // Use flexbox for center alignment
+    justify-content: center; // Center the items horizontally
+    align-items: center; // Center the items vertically
+  }
 
 .downloads li {
-  width:89px;
-  float:left;
-  border-right:1px solid #e0e0e0;
-  height:40px;
-}
-
-.downloads li:first-child a {
-  border-radius:5px 0 0 5px;
-}
-
-.downloads li:last-child a {
-  border-radius:0 5px 5px 0;
+  width: auto; // Allow the button to size according to its content
+  height: 40px;
+  // Remove the float and border-right properties
 }
 
 .downloads a {
-  line-height:1;
-  font-size:11px;
-  color:#676767;
-  display:block;
-  text-align:center;
-  padding-top:6px;
-  height:34px;
-}
+    line-height: 1;
+    font-size: 11px;
+    color: #676767;
+    display: block;
+    text-align: center;
+    padding-top: 6px;
+    height: 34px;
+    // Add some padding for better spacing around the text
+    padding-left: 10px;
+    padding-right: 10px;
+  }
 
 .downloads a:hover, .downloads a:focus {
   color:#675C5C;
@@ -175,9 +172,8 @@ strong {
 }
 
 .downloads li + li + li {
-  border-right:none;
-  width:89px;
-}
+    display: none; // Hide additional buttons if they exist
+  }
 
 .downloads a strong {
   font-size:14px;
@@ -272,8 +268,8 @@ footer {
     width:99%;
   }
 
-  .downloads li, .downloads li {
-    width:100%;
+  .downloads li, .downloads li + li + li {
+    width:33%;
   }
 }
 
